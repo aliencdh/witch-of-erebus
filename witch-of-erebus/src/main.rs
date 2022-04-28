@@ -1,14 +1,7 @@
-// TODO: Load modules in `main`
-// TODO: Change the lifetime specifier of `EntityType` in `Entity` to 'static
-// TODO: if that didn't work, commit arson
-
 #![feature(fn_traits)]
 
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate lazy_static;
-use mutex::Mutex;
 use raylib::{RaylibHandle, RaylibThread};
 use std::{fs::File, io::BufReader, path::Path};
 
@@ -27,7 +20,9 @@ fn main() -> anyhow::Result<()> {
 
     // initialize raylib
     let (mut rl, thread) = raylib::init()
-        .fullscreen()
+        // .fullscreen()
+        .width(1400)
+        .height(800)
         .title("Witch of Erebus")
         .msaa_4x()
         .vsync()
@@ -47,7 +42,7 @@ fn main() -> anyhow::Result<()> {
         // run game loop
         while !rl.window_should_close() {
             state.update();
-            state.draw(&mut rl, &thread);
+            state.draw(&mut rl, &thread)?;
         }
     }
 

@@ -1,5 +1,4 @@
-use raylib::math::{Transform, Vector2};
-use serde::__private::de;
+use raylib::math::Vector2;
 
 use crate::*;
 
@@ -18,6 +17,13 @@ impl Module {
             Module::User(module) => module.request_entity_by_id(descriptor),
         }
     }
+
+    pub fn entity_types(&self) -> &[EntityType] {
+        match self {
+            Module::Core(module) => module.entity_types(),
+            Module::User(module) => module.entity_types(),
+        }
+    }
 }
 
 pub struct RequestEntityByIDDescriptor {
@@ -34,16 +40,21 @@ pub struct CoreModule {
     pub update: Box<dyn Fn(&mut State) -> ()>,
 }
 impl CoreModule {
-    pub fn request_entity_by_id(
+    fn request_entity_by_id(
         &self,
         descriptor: &RequestEntityByIDDescriptor,
     ) -> anyhow::Result<Entity> {
-        Ok(Entity {
-            entity_type: &self.entities[descriptor.id],
-            translation: descriptor.translation,
-            rotation: descriptor.rotation,
-            scale: descriptor.scale,
-        })
+        Ok(
+            self.entities[descriptor.id].create_entity(&CreateEntityDescriptor {
+                translation: descriptor.translation,
+                rotation: descriptor.rotation,
+                scale: descriptor.scale,
+            }),
+        )
+    }
+
+    fn entity_types(&self) -> &[EntityType] {
+        &self.entities
     }
 }
 
@@ -55,10 +66,14 @@ pub struct UserModule {
         Box<libloading::Symbol<'static, for<'r> unsafe extern "C" fn(&'r State) -> &'r [Change]>>,
 }
 impl UserModule {
-    pub fn request_entity_by_id(
+    fn request_entity_by_id(
         &self,
-        descriptor: &RequestEntityByIDDescriptor,
+        _descriptor: &RequestEntityByIDDescriptor,
     ) -> anyhow::Result<Entity> {
+        todo!()
+    }
+
+    fn entity_types(&self) -> &[EntityType] {
         todo!()
     }
 }

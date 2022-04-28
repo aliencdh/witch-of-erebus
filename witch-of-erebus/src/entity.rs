@@ -34,6 +34,21 @@ pub struct EntityType {
     pub label: String,
     pub texture: Texture2D,
 }
+impl EntityType {
+    pub fn create_entity(&self, descriptor: &CreateEntityDescriptor) -> Entity {
+        Entity {
+            entity_type: self,
+            translation: descriptor.translation,
+            rotation: descriptor.rotation,
+            scale: descriptor.scale,
+        }
+    }
+}
+pub struct CreateEntityDescriptor {
+    pub translation: Vector2,
+    pub rotation: f32,
+    pub scale: f32,
+}
 
 /// A single instance of an entity type.
 #[repr(C)]
