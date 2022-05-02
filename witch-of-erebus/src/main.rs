@@ -13,7 +13,7 @@ use module::*;
 use state::*;
 
 // core modules
-mod core;
+mod woe_core;
 
 fn main() -> anyhow::Result<()> {
     pretty_env_logger::init();
@@ -54,16 +54,16 @@ fn load_core_modules(
     rl: &mut RaylibHandle,
     thread: &RaylibThread,
 ) -> anyhow::Result<()> {
-    modules.push(core::player_ships::module(rl, thread)?);
+    modules.push(woe_core::player_ships::module(rl, thread)?);
 
     Ok(())
 }
 
-/// Can be configured with the `WOE_ENTITY_DIR` environment variable.
 struct LoadModulesReturn {
     pub entity_types: Vec<EntityType>,
     pub paths: Vec<Box<Path>>,
 }
+/// Can be configured with the `WOE_ENTITY_DIR` environment variable.
 fn load_entity_types() -> anyhow::Result<LoadModulesReturn> {
     let dir = match std::env::var("WOE_ENTITY_DIR") {
         Err(_) => String::from("entities"),

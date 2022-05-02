@@ -38,6 +38,7 @@ pub struct CoreModule {
     pub name: String,
     pub entities: Vec<EntityType>,
     pub update: Box<dyn Fn(&mut State) -> ()>,
+    pub init: Box<dyn Fn(&mut State) -> ()>,
 }
 impl CoreModule {
     fn request_entity_by_id(
@@ -63,6 +64,8 @@ pub struct UserModule {
     pub name: String,
     pub entities: Vec<Box<EntityType>>,
     pub update:
+        Box<libloading::Symbol<'static, for<'r> unsafe extern "C" fn(&'r State) -> &'r [Change]>>,
+    pub init:
         Box<libloading::Symbol<'static, for<'r> unsafe extern "C" fn(&'r State) -> &'r [Change]>>,
 }
 impl UserModule {

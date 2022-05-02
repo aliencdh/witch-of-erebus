@@ -116,12 +116,11 @@ impl<'lt> GlobalState<'lt> {
 
 /// Interface for modules to interact with the game state.
 #[repr(C)]
-pub struct State<'own, 'entity> {
+pub struct State<'entity> {
     pub clear_color: (u8, u8, u8, u8),
     pub entities: &'entity HashMap<usize, Box<Entity<'entity>>>,
-    phantom_data: &'own (),
 }
-impl<'own, 'entity> State<'own, 'entity> {
+impl<'entity> State<'entity> {
     pub fn new(
         clear_color: (u8, u8, u8, u8),
         entities: &'entity HashMap<usize, Box<Entity<'entity>>>,
@@ -129,7 +128,6 @@ impl<'own, 'entity> State<'own, 'entity> {
         Self {
             clear_color,
             entities,
-            phantom_data: &(),
         }
     }
 }

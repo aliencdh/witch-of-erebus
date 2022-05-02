@@ -32,7 +32,10 @@ pub fn module(
         name: String::from("[Core] Player Ships"),
         entities: vec![boarding_ship, starship],
         update: Box::new(update),
+        init: Box::new(init),
     }))
 }
 
 fn update(_state: &mut State) {}
+
+fn init(_state: &mut State) {}
