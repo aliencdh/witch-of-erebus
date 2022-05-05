@@ -30,6 +30,7 @@ pub struct EntityStateJSON {
 /// # Constraints
 /// 1. `label` must be unique
 /// 2. `texture` must point to a file within a folder under the `assets` folder
+#[derive(Debug)]
 pub struct EntityType {
     pub label: String,
     pub texture: Texture2D,
@@ -52,6 +53,7 @@ pub struct CreateEntityDescriptor {
 
 /// A single instance of an entity type.
 #[repr(C)]
+#[derive(Debug)]
 pub struct Entity<'et> {
     pub entity_type: &'et EntityType,
     pub translation: Vector2,
@@ -73,5 +75,25 @@ impl<'et> Entity<'et> {
         );
 
         Ok(())
+    }
+}
+impl<'et> Clone for Entity<'et> {
+    fn clone(&self) -> Self {
+        Self {
+            entity_type: self.entity_type,
+            translation: self.translation,
+            rotation: self.rotation,
+            scale: self.scale,
+        }
+    }
+}
+impl<'et> PartialEq for Entity<'et> {
+    fn eq(&self, other: &Self) -> bool {
+        (self.translation == other.translation)
+            && (self.rotation == other.rotation)
+            && (self.scale == other.scale)
+            && (unsafe {
+                (self.entity_type as *const EntityType) == (other.entity_type as *const EntityType)
+            })
     }
 }

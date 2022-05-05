@@ -8,9 +8,12 @@ use crate::Entity;
 
 pub struct GlobalState<'lt> {
     pub clear_color: Color,
-    pub modules: &'static Vec<Module>,
+    pub modules: &'lt Vec<Module<'lt>>,
     pub loaded_entities: HashMap<usize, Box<Entity<'lt>>>,
     pub entities_by_name: HashMap<String, &'lt EntityType>,
+
+    pub window_width: usize,
+    pub window_height: usize,
 }
 impl<'lt> GlobalState<'lt> {
     pub fn new(
@@ -25,33 +28,18 @@ impl<'lt> GlobalState<'lt> {
             }
         }
 
-        let mut entities = HashMap::new();
-        // add boarding ship
-        entities.insert(
-            0,
-            Box::new(
-                modules[0].request_entity_by_id(&RequestEntityByIDDescriptor {
-                    id: 0,
-                    translation: Vector2::new(
-                        (window_width / 2) as f32,
-                        (window_height / 2) as f32,
-                    ),
-                    rotation: 0.0,
-                    scale: 1.0,
-                })?,
-            ),
-        );
-
         Ok(Self {
             clear_color: Color::BLACK,
             modules,
-            loaded_entities: entities,
+            loaded_entities: HashMap::new(),
             entities_by_name,
+            window_height,
+            window_width,
         })
     }
 
-    pub fn update(&mut self) {
-        let mut state = State::new(
+    pub fn init(&mut self) {
+        let state = State::new(
             (
                 self.clear_color.r,
                 self.clear_color.g,
@@ -59,16 +47,34 @@ impl<'lt> GlobalState<'lt> {
                 self.clear_color.a,
             ),
             &self.loaded_entities,
+            self.window_width,
+            self.window_height,
         );
         let mut all_changes = vec![];
-        for module_wrapper in self.modules {
-            match module_wrapper {
-                Module::Core(module) => module.update.call((&mut state,)),
-                Module::User(module) => unsafe {
-                    let changes = module.update.as_ref()(&state);
-                    all_changes.append(&mut Vec::from(changes));
-                },
-            }
+        for module in self.modules {
+            let mut changes = module.update(&state);
+            all_changes.append(&mut changes);
+        }
+
+        self.resolve_changes(&all_changes);
+    }
+
+    pub fn update(&mut self) {
+        let state = State::new(
+            (
+                self.clear_color.r,
+                self.clear_color.g,
+                self.clear_color.b,
+                self.clear_color.a,
+            ),
+            &self.loaded_entities,
+            self.window_width,
+            self.window_height,
+        );
+        let mut all_changes = vec![];
+        for module in self.modules {
+            let mut changes = module.update(&state);
+            all_changes.append(&mut changes);
         }
         self.resolve_changes(&all_changes);
     }
@@ -106,6 +112,11 @@ impl<'lt> GlobalState<'lt> {
                         )),
                     );
                 }
+                Change::AddEntity(entity) => {
+                    let max_id = self.loaded_entities.keys().max().unwrap();
+                    self.loaded_entities
+                        .insert(max_id + 1, Box::new(entity.clone()));
+                }
                 &Change::RmEntity(id) => {
                     self.loaded_entities.remove(&id);
                 }
@@ -119,28 +130,36 @@ impl<'lt> GlobalState<'lt> {
 pub struct State<'entity> {
     pub clear_color: (u8, u8, u8, u8),
     pub entities: &'entity HashMap<usize, Box<Entity<'entity>>>,
+    pub window_width: usize,
+    pub window_height: usize,
 }
 impl<'entity> State<'entity> {
     pub fn new(
         clear_color: (u8, u8, u8, u8),
         entities: &'entity HashMap<usize, Box<Entity<'entity>>>,
+        window_width: usize,
+        window_height: usize,
     ) -> Self {
         Self {
             clear_color,
             entities,
+            window_width,
+            window_height,
         }
     }
 }
 
 #[repr(C)]
 #[derive(Clone, PartialEq, Debug)]
-pub enum Change {
+pub enum Change<'et> {
     ClearColor(u8, u8, u8, u8),
     /// # UNSUPPORTED
     /// Instruction to request an entity given its ID, translation, rotation and scale.
     RequestEntityByID(usize, (f32, f32), f32, f32),
     /// Instruction to request an entity given its label, translation, rotation and scale.
     RequestEntityByLabel(String, (f32, f32), f32, f32),
+    /// Instruction to add an entity directly.
+    AddEntity(Entity<'et>),
     /// Instruction to remove an entity given its ID.
     RmEntity(usize),
 }

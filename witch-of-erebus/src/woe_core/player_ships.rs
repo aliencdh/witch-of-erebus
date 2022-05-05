@@ -1,12 +1,14 @@
 //! Defines the starship and boarding ship.
 
+use raylib::math::Vector2;
+
 use super::CORE_ASSET_FOLDER;
 use crate::*;
 
-pub fn module(
+pub fn module<'et>(
     rl: &mut raylib::RaylibHandle,
     thread: &raylib::RaylibThread,
-) -> anyhow::Result<Module> {
+) -> anyhow::Result<Module<'et>> {
     info!("Initializing `[Core] Player Ships` module.");
     let boarding_ship = EntityType {
         label: String::from("[Core] Boarding Ship"),
@@ -15,7 +17,7 @@ pub fn module(
                 thread,
                 &format!("{}{}", CORE_ASSET_FOLDER, "core_boarding_ship.png"),
             )
-            .unwrap(),
+            .map_err(anyhow::Error::msg)?,
     };
 
     let starship = EntityType {
@@ -25,7 +27,7 @@ pub fn module(
                 thread,
                 &format!("{}{}", CORE_ASSET_FOLDER, "core_starship.png"),
             )
-            .unwrap(),
+            .map_err(anyhow::Error::msg)?,
     };
 
     Ok(Module::Core(CoreModule {
@@ -36,6 +38,31 @@ pub fn module(
     }))
 }
 
-fn update(_state: &mut State) {}
+fn update<'et>(_state: &State, _module: &'et CoreModule) -> Vec<Change<'et>> {
+    todo!()
+}
 
-fn init(_state: &mut State) {}
+fn init<'et>(state: &State, module: &'et CoreModule) -> Vec<Change<'et>> {
+    // add boarding ship
+    // entities.insert(
+    // 0,
+    // Box::new(
+    // modules[0].request_entity_by_id(&RequestEntityByIDDescriptor {
+    // id: 0,
+    // translation: Vector2::new((window_width / 2) as f32, (window_height / 2) as f32),
+    // rotation: 0.0,
+    // scale: 1.0,
+    // })?,
+    // ),
+    // );
+
+    Vec::from([Change::AddEntity(Entity {
+        entity_type: &module.entities[0], // boarding ship
+        translation: Vector2::new(
+            (state.window_width / 2) as f32,
+            (state.window_height / 2) as f32,
+        ),
+        rotation: 0.0,
+        scale: 1.0,
+    })])
+}

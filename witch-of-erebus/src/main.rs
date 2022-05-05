@@ -38,6 +38,7 @@ fn main() -> anyhow::Result<()> {
             rl.get_screen_width() as usize,
             rl.get_screen_height() as usize,
         )?;
+        state.init();
 
         // run game loop
         while !rl.window_should_close() {

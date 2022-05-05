@@ -2,11 +2,11 @@ use raylib::math::Vector2;
 
 use crate::*;
 
-pub enum Module {
-    Core(CoreModule),
+pub enum Module<'et> {
+    Core(CoreModule<'et>),
     User(UserModule),
 }
-impl Module {
+impl<'et> Module<'et> {
     /// Returns an entity of the specified `EntityType` centered at the translation specified in the descriptor.
     pub fn request_entity_by_id(
         &self,
@@ -24,6 +24,20 @@ impl Module {
             Module::User(module) => module.entity_types(),
         }
     }
+
+    pub fn init(&self, state: &State) -> Vec<Change> {
+        match self {
+            Module::Core(module) => module.init.call((state, module)),
+            Module::User(module) => unsafe { module.init.as_ref()(state, module).into() },
+        }
+    }
+
+    pub fn update(&self, state: &State) -> Vec<Change> {
+        match self {
+            Module::Core(module) => module.update.call((state, module)),
+            Module::User(module) => unsafe { module.init.as_ref()(state, module).into() },
+        }
+    }
 }
 
 pub struct RequestEntityByIDDescriptor {
@@ -34,13 +48,13 @@ pub struct RequestEntityByIDDescriptor {
 }
 
 /// A module that's part of the core game.
-pub struct CoreModule {
+pub struct CoreModule<'et> {
     pub name: String,
     pub entities: Vec<EntityType>,
-    pub update: Box<dyn Fn(&mut State) -> ()>,
-    pub init: Box<dyn Fn(&mut State) -> ()>,
+    pub update: Box<dyn Fn(&State, &'et CoreModule) -> Vec<Change<'et>>>,
+    pub init: Box<dyn Fn(&State, &'et CoreModule) -> Vec<Change<'et>>>,
 }
-impl CoreModule {
+impl<'et> CoreModule<'et> {
     fn request_entity_by_id(
         &self,
         descriptor: &RequestEntityByIDDescriptor,
@@ -63,10 +77,18 @@ impl CoreModule {
 pub struct UserModule {
     pub name: String,
     pub entities: Vec<Box<EntityType>>,
-    pub update:
-        Box<libloading::Symbol<'static, for<'r> unsafe extern "C" fn(&'r State) -> &'r [Change]>>,
-    pub init:
-        Box<libloading::Symbol<'static, for<'r> unsafe extern "C" fn(&'r State) -> &'r [Change]>>,
+    pub update: Box<
+        libloading::Symbol<
+            'static,
+            for<'r, 's> unsafe extern "C" fn(&'r State, &'s UserModule) -> &'r [Change<'s>],
+        >,
+    >,
+    pub init: Box<
+        libloading::Symbol<
+            'static,
+            for<'r, 's> unsafe extern "C" fn(&'r State, &'s UserModule) -> &'r [Change<'s>],
+        >,
+    >,
 }
 impl UserModule {
     fn request_entity_by_id(
